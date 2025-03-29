@@ -38,7 +38,8 @@ Producer produced item 77 <br />
 Producer produced item 15 <br />
 Consumer consumed item 77 <br />
 
-![Screenshot 2025-03-28 232321](https://github.com/user-attachments/assets/600beedc-f337-4ff8-9e49-67bb27bad6cb)
+<img src="https://github.com/user-attachments/assets/600beedc-f337-4ff8-9e49-67bb27bad6cb" width="500" alt="Screenshot 2025-03-28 232321">
+
 
 > ### How to end the program <br />
 > To be able to end this program from running, try 'ctrl+C'. If that doesn't work open a new terminal and enter ``` 'killall producer' ``` and ``` 'killall consumer' ``` <br /> This will completely kill the program from running in the background.

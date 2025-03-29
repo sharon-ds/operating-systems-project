@@ -1,44 +1,45 @@
 #include <iostream>
 #include <thread>
-#include <semaphore.h> // POSIX semaphores
-#include <unistd.h>    // For sleep function
-#include <vector>
-#include <mutex>
+#include <semaphore.h>
+#include <fcntl.h>    // For O_CREAT
+#include <unistd.h>   // For sleep
+#include <sys/mman.h> // For shared memory
 
-#define TABLE_SIZE 2
+#define SHM_NAME "/shared_table"
 
-std::vector<int> table; // Shared memory (table)
-sem_t empty;            // Semaphore to track empty slots
-sem_t full;             // Semaphore to track full slots
-std::mutex table_mutex; // Mutex for critical section
+sem_t *empty, *full; // POSIX semaphores
+int *table;          // Shared memory
 
 void consumer()
 {
     while (true)
     {
-        sem_wait(&full);    // Wait if no full slots
-        table_mutex.lock(); // Lock shared memory access
+        sem_wait(full); // Wait if no full slots
 
-        // Critical section: Removing item from table
-        int item = table.back();
-        table.pop_back();
+        int item = *table; // Consume the item
         std::cout << "Consumer consumed item " << item << std::endl;
 
-        table_mutex.unlock(); // Unlock shared memory
-        sem_post(&empty);     // Signal an empty slot
-        sleep(1);             // Simulate consumption time
+        sem_post(empty); // Signal empty slot
+        sleep(2);        // Simulate consumption delay
     }
 }
 
 int main()
 {
-    sem_init(&empty, 0, TABLE_SIZE); // Initialize empty slots semaphore
-    sem_init(&full, 0, 0);           // Initialize full slots semaphore
+    // Attach to shared memory
+    int shm_fd = shm_open(SHM_NAME, O_RDWR, 0666);
+    table = (int *)mmap(0, sizeof(int), PROT_WRITE | PROT_READ, MAP_SHARED, shm_fd, 0);
 
-    std::thread cons_thread(consumer); // Create consumer thread
-    cons_thread.join();                // Wait for the consumer thread to finish (this loop will keep running)
+    // Open existing semaphores
+    empty = sem_open("/empty_sem", 0);
+    full = sem_open("/full_sem", 0);
 
-    sem_destroy(&empty); // Destroy semaphores
-    sem_destroy(&full);
+    // Run consumer function in a thread
+    std::thread cons_thread(consumer);
+    cons_thread.join();
+
+    // Cleanup
+    sem_close(empty);
+    sem_close(full);
     return 0;
 }

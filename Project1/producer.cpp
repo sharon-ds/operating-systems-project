@@ -1,45 +1,53 @@
 #include <iostream>
 #include <thread>
-#include <semaphore.h> // POSIX semaphores
-#include <unistd.h>    // For sleep function
-#include <vector>
-#include <mutex>
+#include <semaphore.h>
+#include <fcntl.h>    // For O_CREAT
+#include <unistd.h>   // For sleep
+#include <sys/mman.h> // For shared memory
 
 #define TABLE_SIZE 2
+#define SHM_NAME "/shared_table"
 
-std::vector<int> table; // Shared memory (table)
-sem_t empty;            // Semaphore to track empty slots
-sem_t full;             // Semaphore to track full slots
-std::mutex table_mutex; // Mutex for critical section
+sem_t *empty, *full; // POSIX semaphores
+int *table;          // Shared memory
 
 void producer()
 {
+    int item = 0;
     while (true)
     {
-        int item = rand() % 100; // Generate random item
+        item = rand() % 100; // Produce an item
+        sem_wait(empty);     // Wait if no empty slots
 
-        sem_wait(&empty);   // Wait if no empty slots
-        table_mutex.lock(); // Lock shared memory access
-
-        // Critical section: Adding item to table
-        table.push_back(item);
+        *table = item; // Place item on table
         std::cout << "Producer produced item " << item << std::endl;
 
-        table_mutex.unlock(); // Unlock shared memory
-        sem_post(&full);      // Signal a full slot
-        sleep(1);             // Simulate production time
+        sem_post(full); // Signal full slot
+        sleep(1);       // Simulate production delay
     }
 }
 
 int main()
 {
-    sem_init(&empty, 0, TABLE_SIZE); // Initialize empty slots semaphore
-    sem_init(&full, 0, 0);           // Initialize full slots semaphore
+    // Create shared memory object and truncate it to hold an int
+    int shm_fd = shm_open(SHM_NAME, O_CREAT | O_RDWR, 0666);
+    ftruncate(shm_fd, sizeof(int));
+    table = (int *)mmap(0, sizeof(int), PROT_WRITE | PROT_READ, MAP_SHARED, shm_fd, 0);
 
-    std::thread prod_thread(producer); // Create producer thread
-    prod_thread.join();                // Wait for the producer thread to finish (won’t actually happen in this loop)
+    // Create semaphores
+    empty = sem_open("/empty_sem", O_CREAT, 0666, TABLE_SIZE);
+    full = sem_open("/full_sem", O_CREAT, 0666, 0);
 
-    sem_destroy(&empty); // Destroy semaphores
-    sem_destroy(&full);
+    // Run producer function in a thread
+    std::thread prod_thread(producer);
+    prod_thread.join();
+
+    // Cleanup
+    sem_close(empty);
+    sem_close(full);
+    sem_unlink("/empty_sem");
+    sem_unlink("/full_sem");
+    shm_unlink(SHM_NAME);
+
     return 0;
 }

@@ -12,7 +12,7 @@ If the system is safe, the program prints the safe sequence of process execution
 This compiles the code and creates an executable file named 'bankers'.
 
 3. After compiling, run the program with:
-```bash
+   ```bash
     ./bankers
 Make sure 'input.txt' is in the same directory as 'bankers.cpp' and the compiled 'bankers' executable.
 

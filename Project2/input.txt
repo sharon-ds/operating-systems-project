@@ -1,0 +1,17 @@
+5 3           # 5 processes, 3 resource types (A, B, C)
+10 5 7        # Total instances of A, B, C
+3 3 2         # Available instances of A, B, C
+
+# Allocation matrix
+0 1 0
+2 0 0
+3 0 2
+2 1 1
+0 0 2
+
+# Maximum matrix
+7 5 3
+3 2 2
+9 0 2
+2 2 2
+4 3 3

@@ -32,6 +32,7 @@ Example input.txt:
 
 ### This is the example output:
 <img width="437" alt="image" src="https://github.com/user-attachments/assets/51aaad3d-469f-494b-a61f-e89de1362c90" />
+
 The system is in a safe state. Safe sequence is: P0 -> P1 -> P2 -> P3 -> P4
 
 Code Explanation
